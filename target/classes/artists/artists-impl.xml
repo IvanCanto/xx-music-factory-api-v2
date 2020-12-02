@@ -76,6 +76,22 @@ output application/java
 		</ee:transform>
 		<logger level="INFO" doc:name="INFO END payload" doc:id="de0bb517-55e4-4520-9bf0-dbd18a76cfc1" message="#['sr-build-query-param-list::END::payload: ' ++ write(payload,'application/json')]"/>
 	</sub-flow>
+	<sub-flow name="sr-find-duplicate-artist" doc:id="b0d41871-23d8-4da2-8a81-0af38ed2a8e5" >
+		<logger level="INFO" doc:name="INFO START" doc:id="6e75197c-de41-4ccc-a92f-3a3f99bbd1f3" message="#['sr-find-duplicate-artist::START::payload: ' ++ write(payload,'application/json')]"/>
+		<set-variable value="#[%dw 2.0
+output application/java
+var artist = payload.artist
+---
+{
+    groupName: 	artist.groupName,
+    firstName: 	artist.firstName,
+    lastName:     artist.lastName,
+    dateOfBirth:  artist.dateOfBirth
+  }]" doc:name="queryParamList" doc:id="b6abbfa8-0fff-48db-98da-9d6b9db17f6e" variableName="queryParamList"/>
+		<logger level="DEBUG" doc:name="DEBUG queryParamList" doc:id="f67f6c5e-1de3-41ec-82ee-8380dfae2323" message="#['sr-find-duplicate-artist::queryParamList' ++ write(vars.queryParamList,'application/json')]"/>
+		<flow-ref doc:name="sr-select-artists" doc:id="634ebd26-c51e-4f5a-9427-b91deebd7241" name="sr-select-artists"/>
+		<logger level="INFO" doc:name="INFO sizeOf" doc:id="29b7e88c-9696-4184-bef5-2536839b194c" message="#['sr-find-duplicate-artist' ++ sizeOf(payload.artists)]"/>
+	</sub-flow>
 	<sub-flow name="impl-add-artists" doc:id="ee4e10b8-2448-423c-867c-86990ffc31d0" >
 		<logger level="INFO" doc:name="INFO START" doc:id="57e9ed80-045e-4d89-9c0a-63dd55f11715" message="#['impl-add-artists::START::sizeOfpayload:'  ++ sizeOf(payload.artists)]"/>
 		<ee:transform doc:name="Transform Message" doc:id="7289bfca-d4c3-473a-842d-ab84ede1192c" >
@@ -112,11 +128,23 @@ payload.artists]]></ee:set-variable>
 	}
 }]" doc:name="artist" doc:id="f45ec2dc-c546-4756-904b-3da8ff7a0f3f" />
 			<logger level="DEBUG" doc:name="artist" doc:id="7bb50bd7-c01e-4a0f-bcef-586850e2b072" message="#['impl-add-artists::ForEach::artist: ' ++ write(payload, 'application/json')]"/>
-			<flow-ref doc:name="sr-insert-artist" doc:id="8f3c7a95-c522-47af-8df6-dd774b5686b9" name="sr-insert-artist" target="newArtist"/>
-			<set-variable value="#[%dw 2.0
+			<flow-ref doc:name="sr-find-duplicate-artist" doc:id="15a56595-5784-45e7-8c05-e5217a458489" name="sr-find-duplicate-artist" target="getArtistResponse"/>
+			<choice doc:name="Artist Found?" doc:id="bfa167b1-709b-434f-b66f-38d16314c9b8" >
+				<when expression="#[vars.getArtistResponse.artists[0]==null]">
+					<flow-ref doc:name="sr-insert-artist" doc:id="8f3c7a95-c522-47af-8df6-dd774b5686b9" name="sr-insert-artist" target="newArtist" />
+					<set-variable value="#[%dw 2.0
 output application/java
 ---
-vars.artistsOut + vars.newArtist]" doc:name="append artistsOut" doc:id="8649ca0a-c1ae-46b6-9b5c-a20f7a24f538" variableName="artistsOut"/>
+vars.artistsOut + vars.newArtist]" doc:name="append artistsOut" doc:id="8649ca0a-c1ae-46b6-9b5c-a20f7a24f538" variableName="artistsOut" />
+					<logger level="INFO" doc:name="artistsOut" doc:id="f17a2e4b-21e8-47d2-852e-e31d0bfc628b" message="#['impl-add-artists::ForEach::Choice::artistsOut: ' ++ write(payload,'application/json')]"/>
+				</when>
+				<otherwise >
+					<set-variable value="#[%dw 2.0
+output application/json
+---
+	vars.artistsFound + vars.getArtistResponse.artists[0]]" doc:name="append artistsFound" doc:id="25c221a5-8d41-43b3-94cf-e02e638a478b" variableName="artistsFound"/>
+				</otherwise>
+			</choice>
 		</foreach>
 		<ee:transform doc:name="add response" doc:id="e41c35eb-8501-409a-a382-2c6311a7d97b" >
 			<ee:message >
@@ -124,13 +152,16 @@ vars.artistsOut + vars.newArtist]" doc:name="append artistsOut" doc:id="8649ca0a
 output application/json
 ---
 {
-    "statusCode": p('http.add.status.ok'),
-    "message":    p('http.add.message.ok'),
-    "artistsAdded": 
-   		  vars.artistsOut,
-	"duplicateArtists": 
-  		  vars.artistsFound
+"statusCode": if (sizeOf(vars.artistsFound) > 0) p('http.add.status.partial') else p('http.add.status.ok'),
+"message":  if (sizeOf(vars.artistsFound) > 0) p('http.add.message.partial') else p('http.add.message.ok'),
+    	results: {
+		addedCounts: if (vars.artistsOut[0]==null) "0" else sizeOf(vars.artistsOut), 
+		addedArtists: if (vars.artistsOut[0]==null) "[]" else vars.artistsOut, 
+	duplicatedCounts: if (vars.artistsFound[0]==null) "0" else sizeOf(vars.artistsFound), 
+		duplicatedArtists: if (vars.artistsFound[0]==null) "[]" else vars.artistsFound, 
+	}
 }
+
 ]]></ee:set-payload>
 			</ee:message>
 		</ee:transform>
