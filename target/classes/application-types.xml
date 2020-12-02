@@ -38,6 +38,23 @@ type songs = {|
 
 ]]></types:shape>
     </types:type>
+    <types:type name="artist" format="json">
+      <types:shape format="weave" example="api/examples/artist/requests/artistAddRequest.json"><![CDATA[%dw 2.0
+
+type artist = {|
+  artist: {|
+    artistId: Number {"typeId": "int"}, 
+    groupName: String, 
+    lastName: String, 
+    firstName: String, 
+    mi: String, 
+    dateOfBirth: String, 
+    dateOfDeath: String
+  |}
+|} {"example": "{\\\"artist\\\":{\\\"artistId\\\":0,\\\"groupName\\\":\\\"The Grateful Dead\\\",\\\"lastName\\\":\\\"Garcia\\\",\\\"firstName\\\":\\\"Gerry\\\",\\\"mi\\\":\\\"E\\\",\\\"dateOfBirth\\\":\\\"1982-03-21\\\",\\\"dateOfDeath\\\":\\\"2019-03-21\\\"}}"}
+
+]]></types:shape>
+    </types:type>
   </types:catalog>
   <types:enrichment select="#078aa93c-2d99-4a93-af2e-3bed0b919c31">
     <types:processor-declaration>
@@ -65,5 +82,13 @@ type songs = {|
         </types:message>
       </types:output-event>
     </types:processor-declaration>
+  </types:enrichment>
+  <types:enrichment select="#7289bfca-d4c3-473a-842d-ab84ede1192c"/>
+  <types:enrichment select="#f45ec2dc-c546-4756-904b-3da8ff7a0f3f">
+    <types:operation-declaration>
+      <types:inputs>
+        <types:parameter name="value" type="artist"/>
+      </types:inputs>
+    </types:operation-declaration>
   </types:enrichment>
 </types:mule>

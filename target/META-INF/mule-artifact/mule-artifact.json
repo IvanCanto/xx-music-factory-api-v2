@@ -39,6 +39,7 @@
         "api/examples/album/responses/albumPatchResponse.json",
         "api/examples/album/responses/albumsAddResponse.json",
         "api/examples/album/responses/albumsGetResponse.json",
+        "api/examples/artist/requests/artistAddRequest.json",
         "api/examples/artist/requests/artistPatchRequest.json",
         "api/examples/artist/requests/artistPutRequest.json",
         "api/examples/artist/requests/artistsAddRequest.json",
