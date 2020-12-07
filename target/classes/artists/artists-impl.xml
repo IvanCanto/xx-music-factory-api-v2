@@ -1,10 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<mule xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
-	xmlns="http://www.mulesoft.org/schema/mule/core"
-	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+<mule xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
 http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
-http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd">
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd">
 	<sub-flow name="impl-get-artists" doc:id="e949be68-4efc-4570-af7d-fff00fb46ff7" >
 		<logger level="INFO" doc:name="INFO START" doc:id="c0a32885-c77d-4d99-bb5c-ab3878d22138" message="#['impl-get-artists::START::payload:'  ++ write(payload, 'application/json')]"/>
 		<flow-ref doc:name="sr-build-query-param-list" doc:id="4db7111a-6bf2-41f8-a605-462ddf40d3f6" name="sr-build-query-param-list" target="queryParamList"/>
@@ -214,5 +215,91 @@ var newArtistId = vars.newArtistId[0].artist_id default 0
 	</sub-flow>
 	<sub-flow name="impl-update-artist-urls" doc:id="d3f73044-c385-43dc-a38b-99b0d3c008be" >
 		<logger level="INFO" doc:name="INFO START" doc:id="66d15932-67a7-4fa1-a35c-521e9b145752" message="#['impl-update-artist-urls::START::payload:'  ++ write(payload, 'application/json')]"/>
+		<set-variable value="#[%dw 2.0
+output application/java
+---
+{
+	method: p('last.fm.method'),
+	apiKey: p('last.fm.api.key'),
+	format: p('last.fm.format'),
+	artist: payload.groupName
+}]" doc:name="lastFmProperties" doc:id="65ca1eeb-5993-4046-8c0b-92bbbdbd9b65" variableName="lastFmProperties"/>
+		<flow-ref doc:name="sr-get-artist-info" doc:id="6f408c84-cd38-4b98-ad29-79dd351c98c4" name="sr-get-artist-info" target="lastFmResponse"/>
+		<choice doc:name="Artist Found?" doc:id="a815ea03-bf33-4f7d-856e-fdfb1843a854" >
+			<when expression='#[vars.lastFmResponse.statusCode=="201"]'>
+				<logger level="INFO" doc:name="placeholder" doc:id="f3ab75b5-9b58-4760-9cf2-812c9d8cfc1b" message="#['impl-update-artists-urls::Choice::Placehoder::payload: ' ++ write(payload, 'application/json')]"/>
+				<flow-ref doc:name="sr-patch-artist" doc:id="f0030873-ef21-4892-8ab9-d0de1a1368ad" name="sr-patch-artist" />
+			</when>
+			<otherwise >
+				<ee:transform doc:name="NOT FOUND response" doc:id="4650e9bc-b7ff-44ff-ab39-668294ae86ed" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+vars.lastFmResponse
+]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</otherwise>
+		</choice>
+		<logger level="INFO" doc:name="INFO final response" doc:id="7fd86009-d991-4b60-bbdf-0ffcc2758619" message="#['impl-update-artists-urls::FinalResponse::payload: ' ++ write(payload, 'application/json')]"/>
+	</sub-flow>
+	<sub-flow name="sr-get-artist-info" doc:id="cd0445eb-065e-4daf-bf0a-def2f50e6f0f" >
+		<logger level="INFO" doc:name="INFO START lastFmProperties" doc:id="036ad29a-018e-4500-b1a7-d1b4dda7cf4f" message="#['sr-get-artist-info::START::payload: ' ++ write(vars.lastFmResponse, 'application/json')]"/>
+		<http:request method="GET" doc:name="Get Artist Bio" doc:id="464edc9a-d39d-47fd-a547-fdba939ab100" config-ref="last-fm-http-config" path="/${last.fm.version}">
+			<http:query-params><![CDATA[#[{
+	"method": vars.lastFmProperties.method,
+	"api_key": vars.lastFmProperties.apiKey,
+	"artist": vars.lastFmProperties.artist,
+	"format": vars.lastFmProperties.format
+}]]]></http:query-params>
+		</http:request>
+		<logger level="DEBUG" doc:name="DEBUG payload" doc:id="fe96b7b1-d779-4197-9c5e-c83acaa67b2a" message="#['impl-update-artists-urls::DEBUG:payload: ' ++ write(payload,'application/json')]" />
+		<ee:transform doc:name="response" doc:id="7863a987-84c1-4553-bdc3-cdc93a4217c5">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+var NOT_FOUND_STATUS = p('http.patch.status.nf')
+var NOT_FOUND_MESSAGE = p('http.patch.message.nf')
+var FOUND_STATUS = p('http.patch.status.ok')
+var FOUND_MESSAGE = p('http.patch.message.ok')
+---
+{
+	statusCode: if(payload.artist.bio.content==null) (NOT_FOUND_STATUS) else (FOUND_STATUS),
+	message: if(payload.artist.bio.content==null) (NOT_FOUND_MESSAGE) else (FOUND_MESSAGE),
+	bioUrl: if(payload.artist.bio.content != null) (	payload.artist.bio.links.link.href)  else (NOT_FOUND_MESSAGE)
+
+}
+]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="INFO END payload" doc:id="ac624ad0-e500-4e21-b05e-ddd1db38da5c" message="#['sr-get-artist-info::START::payload: ' ++ write(payload, 'application/json')]"/>
+	</sub-flow>
+	<sub-flow name="sr-patch-artist" doc:id="aa3c6372-caec-4298-94f0-0cb09dac1931" >
+		<logger level="INFO" doc:name="INFO START" doc:id="5d5c7d8c-0db0-492f-97d2-c28d80bf5245" message="#['sr-patch-artist::START::lastFmResponse: ' ++ write(vars.lastFmResponse,'application/json')]"/>
+		<set-variable value="#[vars.lastFmResponse.bioUrl]" doc:name="bioUrl" doc:id="4b423fc3-c4bd-4c4b-89f0-98bb07a1f8c9" variableName="bioUrl"/>
+		<db:update doc:name="Update artist" doc:id="0dced2d9-7ce8-4ac9-bd00-f0fa31c8b9fb" config-ref="mysql-config">
+			<db:sql >UPDATE BC_ARTIST
+  SET bio_url = :bioUrl
+  WHERE group_nm = :groupName
+</db:sql>
+			<db:input-parameters ><![CDATA[#[{
+	bioUrl: vars.bioUrl,
+	groupName: vars.lastFmProperties.artist
+}]]]></db:input-parameters>
+		</db:update>
+		<logger level="DEBUG" doc:name="DEBUG payload" doc:id="0b5afc1b-b7ea-47a6-b790-d1f74ddf751a" message="#['sr-patch-artist::Update payload: ' ++ write(payload,'application/json')]"/>
+		<set-payload value="#[%dw 2.0
+output application/json
+var FOUND_STATUS = p('http.get.status.ok')
+var FOUND_MESSAGE = p('http.get.message.ok')
+---
+{
+	statusCode: FOUND_STATUS,
+	message: FOUND_MESSAGE,
+	bioUrl: vars.bioUrl,
+	recordsUpdated: payload.affectedRows
+}]" doc:name="Set Payload" doc:id="581540d2-7f71-4055-99ac-681b56f9d394" />
+		<logger level="INFO" doc:name="INFO END payload" doc:id="7e060605-d8af-4982-bf6c-c0b47b7c1c86" message="#['sr-patch-artist::END::payload: ' ++ write(payload,'application/json')]"/>
 	</sub-flow>
 </mule>
