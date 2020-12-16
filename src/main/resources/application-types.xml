@@ -55,6 +55,22 @@ type artist = {|
 
 ]]></types:shape>
     </types:type>
+    <types:type name="albumss" format="json">
+      <types:shape format="weave" example="examples/albums.json"><![CDATA[%dw 2.0
+
+type albumss = {|
+  albums: Array<{|    albumTitle: String,     genre: String,     publicationDate: String,     artistId: Number {"typeId": "int"},     groupName: String  |}>
+|} {"example": "{\\\"albums\\\":[{\\\"albumTitle\\\":\\\"Telegraph Canyon I\\\",\\\"genre\\\":\\\"Pop\\\",\\\"publicationDate\\\":\\\"2016-01-29\\\",\\\"artistId\\\":67,\\\"groupName\\\":\\\"King Crimson\\\"},{\\\"albumTitle\\\":\\\"Telegraph Canyon II\\\",\\\"genre\\\":\\\"Pop\\\",\\\"publicationDate\\\":\\\"2018-01-29\\\",\\\"artistId\\\":67,\\\"groupName\\\":\\\"King Crimson\\\"}]}"}
+
+]]></types:shape>
+    </types:type>
+    <types:type name="albumsss" format="json">
+      <types:shape format="weave" example="examples/albumss.json"><![CDATA[%dw 2.0
+
+type albumsss = Array<{|  albumTitle: String,   genre: String,   publicationDate: String,   artistId: Number {"typeId": "int"}|}> {"example": "[{\\\"albumTitle\\\":\\\"Telegraph Canyon I\\\",\\\"genre\\\":\\\"Rock\\\",\\\"publicationDate\\\":\\\"2016-01-29\\\",\\\"artistId\\\":3},{\\\"albumTitle\\\":\\\"Telegraph Canyon II\\\",\\\"genre\\\":\\\"Rock\\\",\\\"publicationDate\\\":\\\"2018-01-29\\\",\\\"artistId\\\":3}]"}
+
+]]></types:shape>
+    </types:type>
   </types:catalog>
   <types:enrichment select="#078aa93c-2d99-4a93-af2e-3bed0b919c31">
     <types:processor-declaration>
@@ -90,5 +106,14 @@ type artist = {|
         <types:parameter name="value" type="artist"/>
       </types:inputs>
     </types:operation-declaration>
+  </types:enrichment>
+  <types:enrichment select="#1ef06b95-c3b2-4133-b410-46d76eb57812">
+    <types:processor-declaration>
+      <types:input-event>
+        <types:message>
+          <types:payload type="albumss"/>
+        </types:message>
+      </types:input-event>
+    </types:processor-declaration>
   </types:enrichment>
 </types:mule>

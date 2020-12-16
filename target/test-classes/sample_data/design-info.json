@@ -5,6 +5,9 @@
       "vars-headerAttributes": "sample_data/json.json",
       "vars-currentFlow": "sample_data/defaultstringtype_1.dwl"
     },
-    "078aa93c-2d99-4a93-af2e-3bed0b919c31": {}
+    "078aa93c-2d99-4a93-af2e-3bed0b919c31": {},
+    "1ef06b95-c3b2-4133-b410-46d76eb57812": {
+      "payload": "sample_data/unknown.dwl"
+    }
   }
 }

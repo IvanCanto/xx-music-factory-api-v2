@@ -12,35 +12,6 @@ http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/
 	<flow name="post:\albums:application\json:xx-music-factory-api-config">
         <set-variable value="albums-main::impl-add-albums" doc:name="currentFlow" doc:id="5be92f83-377e-454d-b29a-a2cf1184b7d3" variableName="currentFlow"/>
 		<flow-ref doc:name="impl-add-albums" doc:id="5f4dd4bb-1ba6-44cd-9407-d687688d5678" name="impl-add-albums"/>
-		<ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
-            <ee:message>
-                <ee:set-payload><![CDATA[%dw 2.0
-output application/json
----
-{
-  statusCode: 201,
-  message: "SUCCESS",
-  albums: [
-    {
-      albumId: 1001,
-      albumTitle: "Telegraph Canyon I",
-      genre: "Pop",
-      publicationDate: "2016-01-29",
-      artistId: 5,
-      artistName: "His Majesty"
-    }, 
-    {
-      albumId: 1002,
-      albumTitle: "Telegraph Canyon II",
-      genre: "Pop",
-      publicationDate: "2018-01-29",
-      artistId: 5,
-      artistName: "Prince"
-    }
-  ]
-}]]></ee:set-payload>
-            </ee:message>
-        </ee:transform>
     </flow>
 	<flow name="get:\albums\(albumId):xx-music-factory-api-config">
         <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core">

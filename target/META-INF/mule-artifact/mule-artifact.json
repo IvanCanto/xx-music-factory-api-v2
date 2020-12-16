@@ -83,6 +83,8 @@
         "artists/artists-main.xml",
         "catalog/catalog-impl.xml",
         "catalog/catalog-main.xml",
+        "examples/albums.json",
+        "examples/albumss.json",
         "global-config.xml",
         "log4j2.xml",
         "properties/DEV.properties",

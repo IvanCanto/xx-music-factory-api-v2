@@ -1,0 +1,14 @@
+[
+  {
+   		"albumTitle": 		"Telegraph Canyon I",
+    		"genre": 			"Rock",
+   		"publicationDate": 	"2016-01-29",
+   		"artistId": 			3
+ 	 },
+ 	 {
+   		"albumTitle": 		"Telegraph Canyon II",
+   	 	"genre": 			"Rock",
+    		"publicationDate": 	"2018-01-29",
+    		"artistId": 			3
+  	}
+     ]
